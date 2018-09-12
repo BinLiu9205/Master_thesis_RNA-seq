@@ -1,0 +1,33 @@
+#cy {
+  width: 100%;
+  height: 700px;
+  border: 1px solid #aaa;
+}
+#table {
+ font-family: arial, sans-serif;
+ border-collapse: collapse;
+ width: 100%;
+}
+td,
+th {
+ border: 1px solid #dddddd;
+ text-align: left;
+ padding: 8px;
+}
+th {
+ background-color: #ccd;
+}
+tr:nth-child(even) {
+ background-color: #dddddd;
+}
+tr:nth-child(odd) {
+ background-color: #ddeedd;
+}
+.highlight {
+ background-color: Yellow;
+ color: Green;
+}
+#cy, #table
+{
+    display:block;
+}

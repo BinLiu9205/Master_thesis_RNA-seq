@@ -1,0 +1,52 @@
+<html>
+<head>
+<link href="JavaScript_library/page_style.css" rel="stylesheet">
+
+<script src="JavaScript_library/cytoscape.js"></script>
+<script src="JavaScript_library/dagre.min.js"></script>
+<script src="JavaScript_library/cytoscape-dagre.js"></script>
+<script src="JavaScript_library/jquery.js"></script>
+<script src="T_cell_up.js"></script>
+</head>
+
+<body >
+  <div id="cy"></div>
+  <div id="my_table" >
+      <!-- table onclick="myFun(event)" border="1" -->
+	<table >
+		<tbody id="mytable" > 
+		  
+		</tbody>
+	</table>
+ </div>
+</body>
+
+<!-- script src=test.js"></script -->
+
+<script>
+	var data = T_cell_up
+	var cy = cytoscape({
+		container: document.getElementById('cy'),
+		elements: data["elements"],
+		style: data["style"],
+		layout: {
+			name: 'dagre'
+		}
+	});
+        cy.on('tap', 'node', function(pdf){
+        if (this.data("p_value")) {
+        try { // your browser may block popups
+        window.open( "http://172.17.189.25:5428/?goTerm=" + this.data("shared_name")  );
+      } catch(e){ // fall back on url change
+        window.location.href = "http://172.17.189.25:5428/?goTerm=" + this.data("shared_name")  ; 
+      } 
+       } else {
+        window.open ("http://amigo.geneontology.org/amigo/term/" + this.data("shared_name")) ;
+        }
+      });
+        
+</script>
+<script src="Functional Analysis Table for Tcell_up_regulation genes.js"> </script>
+<script src="JavaScript_library/Table_function.js"> </script>
+
+</html>
