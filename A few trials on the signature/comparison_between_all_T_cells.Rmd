@@ -1,0 +1,266 @@
+---
+title: "comparison_between_Th1_Th2_with_naive"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# read the data
+```{r}
+library(ggplot2)
+file_list <- list.files(pattern = ".txt")
+data_set <- lapply(file_list, function(x){read.delim(x,header = F,as.is = T,stringsAsFactors = F)})
+info <- data_set[[1]]
+#unlist(data_set)
+data_fr <- as.data.frame(data_set[3:14])
+data_fr <- data_fr[,grep("V2", colnames(data_fr))]
+rownames(data_fr) <- data_set[3][[1]][,1]
+colnames(data_fr) <- info[,2]
+Th1 <- data_fr[ ,grep("Th1-",colnames(data_fr),fixed = T)]
+Th2 <- data_fr[ ,grep("Th2-",colnames(data_fr),fixed = T)]
+Th0 <- data_fr[ ,grep("Naive-",colnames(data_fr),fixed = T)]
+Th17 <- data_fr[,grep("Th17",colnames(data_fr),fixed = T)]
+iTreg <- data_fr[,grep("iTreg",colnames(data_fr),fixed = T)]
+nTreg <- data_fr[,grep("nTreg",colnames(data_fr),fixed = T)]
+df <- as.data.frame(cbind(Th0,Th1,Th2,Th17,iTreg,nTreg))
+expression_level <- log2(df)
+```
+#PCA analysis for all T celltypes
+```{r}
+### run a PCA analysis for all T celltypes
+PCA_data<- as.data.frame(t(expression_level))
+PCA_data$group <- c("Naive", "Naive","Th1", "Th1","Th2", "Th2","Th17","Th17", "iTreg","iTreg", "nTreg","nTreg")
+PCA_plot<- prcomp(PCA_data[,1:45101])
+ggplot(data = NULL, aes(PCA_plot$x[,1],PCA_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_plot$sdev^2/sum(PCA_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)")
+### genes with the top500 highest variance
+PCA_var <- apply(PCA_data[,1:45101],2,var)
+PCA_var <- order(PCA_var,decreasing = T)
+PCA_var <- PCA_var[1:500]
+PCA_var_data <- PCA_data[PCA_var]
+PCA_var_plot <- prcomp(PCA_var_data)
+ggplot(data = NULL, aes(PCA_var_plot$x[,1],PCA_var_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_var_plot$sdev^2/sum(PCA_var_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)")
+```
+
+
+# start eliminating T celltypes, no longer taking into the consideration of nTreg and iTreg
+```{r}
+### run a PCA analysis eliminating the influence of iTreg and nTreg
+
+PCA_data<- as.data.frame(t(expression_level))
+PCA_data$group <- c("Naive","Naive", "Th1","Th1", "Th2", "Th2","Th17","Th17", "iTreg", "iTreg", "nTreg","nTreg")
+PCA_data <- PCA_data[1:8,]
+PCA_plot<- prcomp(PCA_data[,1:45101])
+ggplot(data = NULL, aes(PCA_plot$x[,1],PCA_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_plot$sdev^2/sum(PCA_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)")
+### genes with the top500 highest variance
+PCA_var <- apply(PCA_data[,1:45101],2,var)
+PCA_var <- order(PCA_var,decreasing = T)
+PCA_var <- PCA_var[1:500]
+PCA_var_data <- PCA_data[PCA_var]
+PCA_var_plot <- prcomp(PCA_var_data)
+ggplot(data = NULL, aes(PCA_var_plot$x[,1],PCA_var_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_var_plot$sdev^2/sum(PCA_var_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)")
+
+```
+#Get the mean of different celltypes, not log2 transformed
+```{r}
+Th1 $ mean <- rowMeans(Th1)
+Th2 $ mean <- rowMeans(Th2)
+Th0 $ mean <- rowMeans(Th0)
+Th17 $ mean <- rowMeans(Th17)
+iTreg $ mean <- rowMeans(iTreg)
+nTreg $ mean <- rowMeans(nTreg)
+exp_Th0 <- expression_level[,1:2]
+exp_Th0 $ mean <- rowMeans(exp_Th0)
+exp_Th1 <- expression_level[,3:4]
+exp_Th1 $ mean <- rowMeans(exp_Th1)
+exp_Th2 <- expression_level[,5:6]
+exp_Th2 $ mean <- rowMeans(exp_Th2)
+exp_Th17 <- expression_level[,7:8]
+exp_Th17 $ mean <- rowMeans(exp_Th17)
+exp_iTreg <- expression_level[,9:10]
+exp_iTreg $ mean <- rowMeans(exp_iTreg)
+exp_nTreg <- expression_level[,11:12]
+exp_nTreg $ mean <- rowMeans(exp_nTreg)
+## generate the whole list for comparison
+library(AnnotationDbi)
+library(mouse4302.db)
+whole_Th1 <- cbind(exp_Th1, exp_Th0)
+whole_symbol<-mapIds(mouse4302.db,keys=as.character(row.names(whole_Th1)),column = "SYMBOL",keytype = "PROBEID" ) 
+whole_Th1$symbol <- whole_symbol
+whole_Th1<-whole_Th1[,c(7,1:6)]
+colnames(whole_Th1) <- c("symbol","Th1_sample1","Th1_sample2","Th1_mean","Th0_sample1","Th0_sample2","Th0_mean")
+whole_Th1$logFC <- whole_Th1$Th1_mean - whole_Th1$Th0_mean
+whole_Th1$direction <- T
+whole_Th1$direction[whole_Th1$logFC<0 ] <- F
+
+whole_Th2 <- cbind(exp_Th2, exp_Th0)
+whole_Th2$symbol <- whole_symbol
+whole_Th2<-whole_Th2[,c(7,1:6)]
+colnames(whole_Th2) <- c("symbol","Th2_sample1","Th2_sample2","Th2_mean","Th0_sample1","Th0_sample2","Th0_mean")
+whole_Th2$logFC <- whole_Th2$Th2_mean - whole_Th2$Th0_mean
+whole_Th2$direction <- T
+whole_Th2$direction[whole_Th2$logFC<0 ] <- F
+
+whole_Th17 <- cbind(exp_Th17, exp_Th0)
+whole_Th17$symbol <- whole_symbol
+whole_Th17<-whole_Th17[,c(7,1:6)]
+colnames(whole_Th17) <- c("symbol","Th17_sample1","Th17_sample2","Th17_mean","Th0_sample1","Th0_sample2","Th0_mean")
+whole_Th17$logFC <- whole_Th17$Th17_mean - whole_Th17$Th0_mean
+whole_Th17$direction <- T
+whole_Th17$direction[whole_Th17$logFC<0 ] <- F
+
+write.table(whole_Th1,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/overall_expression_of_Th1.txt",quote = F)
+write.table(whole_Th2,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/overall_expression_of_Th2.txt",quote = F)
+write.table(whole_Th17,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/overall_expression_of_Th17.txt",quote = F)
+```
+# Try to rule out the influence of iTreg and nTreg, and compare the three subtypes with the Th0 to see the awareness behavior of different immune T cells
+```{r}
+comp_immuneawareness <- expression_level[,1:8]
+library(limma)
+design <- model.matrix(~ 0 + factor(c(1,1,2,2,3,3,4,4)))
+colnames(design) <- c( "Naive","Th1","Th2","Th17")
+fit <- lmFit(comp_immuneawareness ,design =design)
+contrast_mat <-makeContrasts(Th1-Naive,Th2-Naive,Th17-Naive,levels = design)
+fit2 <- contrasts.fit(fit, contrast_mat)
+fit <-eBayes(fit2, 0.01)
+p.adj<-p.adjust(fit$p.value,method = "fdr")
+p.adj<-matrix(as.numeric(p.adj),ncol=3,nrow=45101)
+library(AnnotationDbi)
+library(mouse4302.db)
+gen_symbol<-mapIds(mouse4302.db,keys =as.character(row.names(data_fr)), column = "SYMBOL",keytype = "PROBEID" ) 
+T_awareness<-as.data.frame(cbind(gen_symbol,fit$p.value,p.adj))
+names(T_awareness)<-c("Gene_symbol","pvalue_Th1","pvalue_Th2","pvalue_Th17","padj_Th1","padj_Th2","padj_Th17")
+Th1_list <-T_awareness[as.numeric(as.character(T_awareness$padj_Th1))<= 0.05,]
+Th1_list <- Th1_list[,c(1,2,5)]
+Th1_list $ Th0 <- exp_Th0$mean[rownames(exp_Th0) %in% rownames(Th1_list)]
+Th1_list $ Th1 <- exp_Th1$mean[rownames(exp_Th1) %in% rownames(Th1_list)]
+Th1_list $ logFC <- Th1_list$Th1-Th1_list$Th0
+Th1_list$direction <- T
+Th1_list$direction[Th1_list $logFC <0] <- F
+Th2_list <-T_awareness[as.numeric(as.character(T_awareness$padj_Th2))<= 0.05,]
+Th2_list <- Th2_list[,c(1,3,6)]
+Th2_list $ Th0 <- exp_Th0$mean[rownames(exp_Th0) %in% rownames(Th2_list)]
+Th2_list $ Th2 <- exp_Th2$mean[rownames(exp_Th2) %in% rownames(Th2_list)]
+Th2_list $ logFC <- Th2_list$Th2-Th2_list$Th0
+Th2_list$direction <- T
+Th2_list$direction[Th2_list $logFC <0] <- F
+Th17_list <-T_awareness[as.numeric(as.character(T_awareness$padj_Th17))<= 0.05,]
+Th17_list <- Th17_list[,c(1,4,7)]
+Th17_list $ Th0 <- exp_Th0$mean[rownames(exp_Th0) %in% rownames(Th17_list)]
+Th17_list $ Th17 <- exp_Th17$mean[rownames(exp_Th17) %in% rownames(Th17_list)]
+Th17_list $ logFC <- Th17_list$Th17-Th17_list$Th0
+Th17_list$direction <- T
+Th17_list$direction[Th17_list $logFC <0] <- F
+write.table(Th1_list,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Th0 to Th1.txt",quote = F)
+write.table(Th2_list,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Th0 to Th2.txt",quote = F)
+write.table(Th17_list,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Th0 to Th17.txt",quote = F)
+ggplot(mapping=aes(whole_Th2$logFC,-log10(as.numeric(as.character(p.adj[,2])))))+geom_point(size= 0.002,alpha=0.5)+ labs(x="log 2 fold change", y="-log10 p-value", title="Volcano Plot for Th2 cell differentiation")
+ggplot(mapping=aes(whole_Th1$logFC,-log10(as.numeric(as.character(p.adj[,1])))))+geom_point(size= 0.002,alpha=0.5)+ labs(x="log 2 fold change", y="-log10 p-value", title="Volcano Plot for Th1 cell differentiation")
+ggplot(mapping=aes(whole_Th17$logFC,-log10(as.numeric(as.character(p.adj[,3])))))+geom_point(size= 0.002,alpha=0.5)+ labs(x="log 2 fold change", y="-log10 p-value", title="Volcano Plot for Th17 cell differentiation")
+```
+# Another approach to the comparison, try to see whether only thinking about the Th1 Th2 and TH17 would make the seperation more meaningful
+```{r}
+# PCA analysis of only three different kinds of activated T helper cells
+PCA_data<- as.data.frame(t(expression_level))
+PCA_data$group <- c("Naive","Naive", "Th1","Th1", "Th2", "Th2","Th17","Th17", "iTreg", "iTreg", "nTreg","nTreg")
+PCA_data <- PCA_data[3:8,]
+PCA_plot<- prcomp(PCA_data[,1:45101])
+ggplot(data = NULL, aes(PCA_plot$x[,1],PCA_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_plot$sdev^2/sum(PCA_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)") 
+### genes with the top500 highest variance
+PCA_var <- apply(PCA_data[,1:45101],2,var)
+PCA_var <- order(PCA_var,decreasing = T)
+PCA_var <- PCA_var[1:500]
+PCA_var_data <- PCA_data[PCA_var]
+PCA_var_plot <- prcomp(PCA_var_data)
+ggplot(data = NULL, aes(PCA_var_plot$x[,1],PCA_var_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_var_plot$sdev^2/sum(PCA_var_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)") 
+```
+
+# When only having Th1 and Th2, because those are most specific for the research of lung fibrosis
+```{r}
+PCA_data<- as.data.frame(t(expression_level))
+PCA_data$group <- c("Naive","Naive", "Th1","Th1", "Th2", "Th2","Th17","Th17", "iTreg", "iTreg", "nTreg","nTreg")
+PCA_data <- PCA_data[3:6,]
+PCA_plot<- prcomp(PCA_data[,1:45101])
+ggplot(data = NULL, aes(PCA_plot$x[,1],PCA_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_plot$sdev^2/sum(PCA_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)") 
+### genes with the top500 highest variance
+PCA_var <- apply(PCA_data[,1:45101],2,var)
+PCA_var <- order(PCA_var,decreasing = T)
+PCA_var <- PCA_var[1:500]
+PCA_var_data <- PCA_data[PCA_var]
+PCA_var_plot <- prcomp(PCA_var_data)
+ggplot(data = NULL, aes(PCA_var_plot$x[,1],PCA_var_plot$x[,2],color=PCA_data$group) ) + geom_point() + xlab("First component") + ylab("Second component")+labs(color="celltype")
+PoV <- PCA_var_plot$sdev^2/sum(PCA_var_plot$sdev^2)*100
+barplot(PoV, xlab= "Dimensions", ylab="Proportion of explained variance (%)") 
+## When only having Th1 and Th2, the differences among samples of the same subtype would even influence the result of the comparison
+```
+# After analysis, it would be recommended that Th1, Th2 and Th17 as a group for the comparison between different activated T helper cells, generating an ANOVA similar result list
+```{r}
+diff_activ_Th <- expression_level[,3:8]
+library(limma)
+design <- model.matrix(~ 0 + factor(c(1,1,2,2,3,3)))
+colnames(design) <- c( "Th1","Th2","Th17")
+fit <- lmFit(diff_activ_Th ,design =design)
+contrast_mat <-makeContrasts(Th17-Th1,Th2-Th1,Th17-Th2,levels = design)
+fit2 <- contrasts.fit(fit, contrast_mat)
+fit <-eBayes(fit2, 0.01,trend = T)
+#fit <-eBayes(fit2, 0.01)
+p.adj<-p.adjust(fit$p.value,method = "fdr")
+p.adj<-matrix(as.numeric(p.adj),ncol=3,nrow=45101)
+library(AnnotationDbi)
+library(mouse4302.db)
+gen_symbol<-mapIds(mouse4302.db,keys =as.character(row.names(data_fr)), column = "SYMBOL",keytype = "PROBEID" ) 
+T_diff_act<-as.data.frame(cbind(gen_symbol,fit$p.value,p.adj))
+names(T_diff_act)<-c("Gene_symbol","pvalue_Th17_Th1","pvalue_Th2_Th1","pvalue_Th17_Th2","padj_Th17_Th1","padj_Th2_Th1","padj_Th17_Th2")
+T_1721_sig <- T_diff_act[as.numeric(as.character(T_diff_act$padj_Th2_Th1))<=0.05,]
+write.table(T_1721_sig,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/List of Th1_Th2 when compared with Th17.txt",quote = F)
+
+```
+# Only using Th1 and Th2, expected is a shorter list of DE
+```{r}
+diff_activ_Th <- expression_level[,3:6]
+library(limma)
+design <- model.matrix(~ 0 + factor(c(1,1,2,2)))
+colnames(design) <- c( "Th1","Th2")
+fit <- lmFit(diff_activ_Th ,design =design)
+contrast_mat <-makeContrasts(Th2-Th1,levels = design)
+fit2 <- contrasts.fit(fit, contrast_mat)
+fit <-eBayes(fit2, 0.01,trend = T)
+p.adj<-p.adjust(fit$p.value,method = "fdr")
+p.adj<-matrix(as.numeric(p.adj),ncol=1,nrow=45101)
+library(AnnotationDbi)
+library(mouse4302.db)
+gen_symbol<-mapIds(mouse4302.db,keys =as.character(row.names(data_fr)), column = "SYMBOL",keytype = "PROBEID" ) 
+T_diff_Th12<-as.data.frame(cbind(gen_symbol,fit$p.value,p.adj))
+names(T_diff_Th12)<-c("Gene_symbol","pvalue_Th2_Th1","padj_Th2_Th1")
+Th12_sig <- T_diff_Th12[as.numeric(as.character(T_diff_Th12$padj_Th2_Th1))<=0.05,]
+write.table(Th12_sig,file = "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/List of Th1_Th2 without compared with Th17.txt",quote = F)
+##p.value <=0.05 is a list of zero elements
+```
+
+#Generate the lists including all the information for the Th1/Th2 ratio. The list is going to be used for the comparison of the signature
+```{r}
+comp_Th1_2 <- cbind(exp_Th1,exp_Th2)
+comp_Th1_2$logFC <- comp_Th1_2[,3]- comp_Th1_2[,6]
+comp_Th1_2$gene <- mapIds(mouse4302.db,keys=as.character(row.names(comp_Th1_2)),column = "SYMBOL",keytype = "PROBEID" )
+comp_Th1_2$direction <- T
+comp_Th1_2$direction[comp_Th1_2$logFC<0] <- F
+comp_Th1_2 <- comp_Th1_2[,c(8,1:7,9)]
+row.names(comp_Th1_2)[4] <- "Th1_mean"
+row.names(comp_Th1_2)[7] <- "Th2_mean"
+write.table(comp_Th1_2,file =  "~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Expression_level_of_Th1_versus_Th2.txt",quote = F) 
+```
+

@@ -1,0 +1,71 @@
+---
+title: "comparison_of_Th1_Th2_ratio_with_multiple_trials"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+Th1_2_signature <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/List of Th1_Th2 without compared with Th17.txt",stringsAsFactors = F, as.is = F,header=T)
+#When using Th2-Th1 for comparison
+#Th1_2_signature$direction<-!Th1_2_signature$direction
+
+Th1_2_data<- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Expression_level_of_Th1_versus_Th2.txt",stringsAsFactors = F, as.is = F,header=T)
+# The direction is changed to log FC= Th2/Th1
+#Th1_2_data$direction<-!Th1_2_data$direction
+Lung_Fibr <- read.csv("~/R/Project_3_Lung Fibrosis/Visualization_B_Tcells/DifferentialExpressionResults_TCells.csv",stringsAsFactors = F, as.is = T)
+Lung_Fibr $ direction <- T
+Lung_Fibr $ direction [Lung_Fibr$log2FoldChange<0] <- F
+```
+
+# Test of the Th1/Th2 direction change in lung fibrosis
+```{r}
+library(ggplot2)
+g_signature<-Th1_2_data
+targetSet<-Lung_Fibr
+sig_tar_over <- targetSet[match(toupper(g_signature[,1]),toupper(targetSet[,1])),]
+sig_tar_over<-sig_tar_over[is.na(sig_tar_over[,1])==FALSE,]
+sig_over<-g_signature[match(toupper(sig_tar_over[,1]),toupper(g_signature[,1])),]
+
+g_signature_sig<- sig_over[sig_over$gene%in%Th1_2_signature$Gene_symbol,]
+
+target_inter<-sig_tar_over[match(toupper(g_signature_sig[,1]),toupper(sig_tar_over[,1])),]
+sig_inter<- sig_over[match(toupper(target_inter[,1]),toupper(sig_over[,1])),]
+
+accu<- sum(sig_inter$direction==target_inter$direction)/nrow(target_inter)
+sample_nr<-nrow(target_inter)
+all_nr <- nrow(sig_tar_over)
+r_accu<- NULL
+p_value <- NULL
+deviation <-NULL
+for (k in 1:20) {
+  for (i in 1:10000){
+  rownr<- sample(1:all_nr,sample_nr) 
+  sig_ran<-sig_over[rownr,]
+  tar_ran<-sig_tar_over[rownr,]
+  r_accu[i] = sum(sig_ran$direction==tar_ran$direction)/sample_nr
+}
+
+#hist(r_accu)
+#qqnorm(r_accu)
+#qqline(r_accu)
+
+#h<-hist(r_accu,breaks=15)
+#xhist<-c(min(h$breaks),h$breaks)
+#yhist<-c(0,h$density,0)
+#xfit<-seq(min(r_accu),max(r_accu),length=40)
+#yfit<-dnorm(xfit,mean=mean(r_accu),sd=sd(r_accu))
+#plot(xhist,yhist,type="s",ylim=c(0,max(yhist,yfit)), main="Normal pdf and
+ #    histogram")
+#lines(xfit,yfit, col="red")
+p_value[k] <- sum(r_accu>accu) / length(r_accu)
+deviation[k] <- (accu - mean(r_accu) ) / sd(r_accu)
+}
+
+mean(p_value)
+mean(deviation)
+```
+
+

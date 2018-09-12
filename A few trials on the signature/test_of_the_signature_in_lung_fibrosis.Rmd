@@ -1,0 +1,174 @@
+---
+title: "test_of_the_signature_in_lung_fibrosis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# When choosing the activation process of the T_cells as the target for preparison
+```{r}
+#The input of the signatures, biological processes we are interested in are the activation of Th1, Th2 and Th17
+Th1_signature <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Th0 to Th1.txt",stringsAsFactors = F, as.is = T)
+Th2_signature <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Th0 to Th2.txt",stringsAsFactors = F, as.is = T)
+Th17_signature <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/Th0 to Th17.txt",stringsAsFactors = F, as.is = T)
+
+Th1_all <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/overall_expression_of_Th1.txt", stringsAsFactors = F, as.is = T)
+Th2_all <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/overall_expression_of_Th2.txt", stringsAsFactors = F, as.is = T)
+Th17_all <- read.table("~/R/Project_3_Lung Fibrosis/comparison_with_TH1_TH2/GSE14308_TH2_VS_TH1_UP_for_TH/GSE14308_family.xml/overall_expression_of_Th17.txt", stringsAsFactors = F, as.is = T)
+
+Lung_Fibr <- read.csv("~/R/Project_3_Lung Fibrosis/Visualization_B_Tcells/DifferentialExpressionResults_TCells.csv",stringsAsFactors = F, as.is = T)
+Lung_Fibr $ direction <- T
+Lung_Fibr $ direction [Lung_Fibr$log2FoldChange<0] <- F
+```
+#The test of Th1 activation signature in lung fibrosis
+```{r}
+library(ggplot2)
+g_signature<-Th1_all
+targetSet<-Lung_Fibr
+sig_tar_over <- targetSet[match(toupper(g_signature[,1]),toupper(targetSet[,1])),]
+sig_tar_over<-sig_tar_over[is.na(sig_tar_over[,1])==FALSE,]
+sig_over<-g_signature[match(toupper(sig_tar_over[,1]),toupper(g_signature[,1])),]
+#filtering the signature data set by finding genes could be found in the signature set, also important
+#True as upregulated, F as downregulated, to get a better rapid
+#g_signature_sig<- sig_over[sig_over$qvalue.p.value.modulation..<=0.05&abs(sig_over$FoldChange.Combi.vs..none.)>=2,]
+###here would be 6443 genes as signature, further developed is the filtering of the genes
+g_signature_sig<- sig_over[rownames(sig_over)%in%rownames(Th1_signature),]
+
+target_inter<-sig_tar_over[match(toupper(g_signature_sig[,1]),toupper(sig_tar_over[,1])),]
+sig_inter<- sig_over[match(toupper(target_inter[,1]),toupper(sig_over[,1])),]
+
+accu<- sum(sig_inter$direction==target_inter$direction)/nrow(target_inter)
+sample_nr<-nrow(target_inter)
+all_nr <- nrow(sig_tar_over)
+r_accu<- NULL
+# column 24,25,26 WT,WT_KO,KO respectively
+for (i in 1:10000){
+  rownr<- sample(1:all_nr,sample_nr) 
+  sig_ran<-sig_over[rownr,]
+  tar_ran<-sig_tar_over[rownr,]
+  r_accu[i] = sum(sig_ran$direction==tar_ran$direction)/sample_nr
+}
+
+hist(r_accu)
+qqnorm(r_accu)
+qqline(r_accu)
+
+h<-hist(r_accu,breaks=15)
+xhist<-c(min(h$breaks),h$breaks)
+yhist<-c(0,h$density,0)
+xfit<-seq(min(r_accu),max(r_accu),length=40)
+yfit<-dnorm(xfit,mean=mean(r_accu),sd=sd(r_accu))
+plot(xhist,yhist,type="s",ylim=c(0,max(yhist,yfit)), main="Normal pdf and
+     histogram")
+lines(xfit,yfit, col="red")
+p_value <- sum(r_accu>accu) / length(r_accu)
+accu
+mean(r_accu)
+p_value 
+(accu - mean(r_accu) ) / sd(r_accu)
+```
+
+# The test of Th2 activation in lung fibrosis
+
+```{r}
+
+library(ggplot2)
+g_signature<-Th2_all
+targetSet<-Lung_Fibr
+sig_tar_over <- targetSet[match(toupper(g_signature[,1]),toupper(targetSet[,1])),]
+sig_tar_over<-sig_tar_over[is.na(sig_tar_over[,1])==FALSE,]
+sig_over<-g_signature[match(toupper(sig_tar_over[,1]),toupper(g_signature[,1])),]
+#filtering the signature data set by finding genes could be found in the signature set, also important
+#True as upregulated, F as downregulated, to get a better rapid
+#g_signature_sig<- sig_over[sig_over$qvalue.p.value.modulation..<=0.05&abs(sig_over$FoldChange.Combi.vs..none.)>=2,]
+###here would be 6443 genes as signature, further developed is the filtering of the genes
+g_signature_sig<- sig_over[rownames(sig_over)%in%rownames(Th2_signature),]
+
+target_inter<-sig_tar_over[match(toupper(g_signature_sig[,1]),toupper(sig_tar_over[,1])),]
+sig_inter<- sig_over[match(toupper(target_inter[,1]),toupper(sig_over[,1])),]
+
+accu<- sum(sig_inter$direction==target_inter$direction)/nrow(target_inter)
+sample_nr<-nrow(target_inter)
+all_nr <- nrow(sig_tar_over)
+r_accu<- NULL
+# column 24,25,26 WT,WT_KO,KO respectively
+for (i in 1:10000){
+  rownr<- sample(1:all_nr,sample_nr) 
+  sig_ran<-sig_over[rownr,]
+  tar_ran<-sig_tar_over[rownr,]
+  r_accu[i] = sum(sig_ran$direction==tar_ran$direction)/sample_nr
+}
+
+hist(r_accu)
+qqnorm(r_accu)
+qqline(r_accu)
+
+h<-hist(r_accu,breaks=15)
+xhist<-c(min(h$breaks),h$breaks)
+yhist<-c(0,h$density,0)
+xfit<-seq(min(r_accu),max(r_accu),length=40)
+yfit<-dnorm(xfit,mean=mean(r_accu),sd=sd(r_accu))
+plot(xhist,yhist,type="s",ylim=c(0,max(yhist,yfit)), main="Normal pdf and
+     histogram")
+lines(xfit,yfit, col="red")
+p_value <- sum(r_accu>accu) / length(r_accu)
+accu
+mean(r_accu)
+p_value 
+(accu - mean(r_accu) ) / sd(r_accu)
+```
+
+#Test of Th17 activation in lung fibrosis
+
+```{r}
+library(ggplot2)
+g_signature<-Th17_all
+targetSet<-Lung_Fibr
+sig_tar_over <- targetSet[match(toupper(g_signature[,1]),toupper(targetSet[,1])),]
+sig_tar_over<-sig_tar_over[is.na(sig_tar_over[,1])==FALSE,]
+sig_over<-g_signature[match(toupper(sig_tar_over[,1]),toupper(g_signature[,1])),]
+#filtering the signature data set by finding genes could be found in the signature set, also important
+#True as upregulated, F as downregulated, to get a better rapid
+#g_signature_sig<- sig_over[sig_over$qvalue.p.value.modulation..<=0.05&abs(sig_over$FoldChange.Combi.vs..none.)>=2,]
+###here would be 6443 genes as signature, further developed is the filtering of the genes
+g_signature_sig<- sig_over[rownames(sig_over)%in%rownames(Th17_signature),]
+
+target_inter<-sig_tar_over[match(toupper(g_signature_sig[,1]),toupper(sig_tar_over[,1])),]
+sig_inter<- sig_over[match(toupper(target_inter[,1]),toupper(sig_over[,1])),]
+
+accu<- sum(sig_inter$direction==target_inter$direction)/nrow(target_inter)
+sample_nr<-nrow(target_inter)
+all_nr <- nrow(sig_tar_over)
+r_accu<- NULL
+# column 24,25,26 WT,WT_KO,KO respectively
+for (i in 1:10000){
+  rownr<- sample(1:all_nr,sample_nr) 
+  sig_ran<-sig_over[rownr,]
+  tar_ran<-sig_tar_over[rownr,]
+  r_accu[i] = sum(sig_ran$direction==tar_ran$direction)/sample_nr
+}
+
+hist(r_accu)
+qqnorm(r_accu)
+qqline(r_accu)
+
+h<-hist(r_accu,breaks=15)
+xhist<-c(min(h$breaks),h$breaks)
+yhist<-c(0,h$density,0)
+xfit<-seq(min(r_accu),max(r_accu),length=40)
+yfit<-dnorm(xfit,mean=mean(r_accu),sd=sd(r_accu))
+plot(xhist,yhist,type="s",ylim=c(0,max(yhist,yfit)), main="Normal pdf and
+     histogram")
+lines(xfit,yfit, col="red")
+p_value <- sum(r_accu>accu) / length(r_accu)
+accu
+mean(r_accu)
+p_value 
+(accu - mean(r_accu) ) / sd(r_accu)
+```
+
+
+
+
+
