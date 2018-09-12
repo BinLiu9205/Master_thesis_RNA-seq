@@ -10,9 +10,13 @@ echo $panther_method
 if [ "$panther_method" = "overrepresentation" ] 
 then 
 	R< GO_trimmed_separation_overrepresentation.R --no-save
+	chmod u+x GOAnnotations_overrepresentation.py
+	python3 < GOAnnotations_overrepresentation.py
 elif [ "$panther_method" = "enrichment" ] 
 then 
 	R< GO_trimmed_separation_enrichment.R --no-save
+	chmod u+x GOAnnotations_enrichment.py
+	python3 < GOAnnotations_enrichment.py
 else 
 echo "Please enter the right option"
 fi

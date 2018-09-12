@@ -1,5 +1,5 @@
 add_list <- read.table("result/Panther_result_as_table.txt", as.is = T,header=T, sep= ";")
-add_list [1,] <- as.character(colnames(add_list))
+add_list <- rbind( as.character(colnames(add_list)), add_list )
 add_list
 library(xtable)
 out_table <- xtable(add_list)
